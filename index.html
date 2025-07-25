@@ -45,7 +45,8 @@
         display: none; /* Oculto por defecto */
       }
 
-      #altitude-display, #speed-display {
+      #altitude-display,
+      #speed-display {
         margin-top: 10px;
         font-weight: bold;
       }
@@ -60,7 +61,8 @@
       <button onclick="stopReplay()">Detener Reproducción</button>
       <button onclick="downloadDataLog()">Descargar Recorrido</button>
       <div id="altitude-display">Altitud: 0.00m</div>
-      <div id="speed-display">Velocidad: 0.00m/s</div> <div id="log"></div>
+      <div id="speed-display">Velocidad: 0.00m/s</div>
+      <div id="log"></div>
     </div>
 
     <div id="mobile-controls">
@@ -74,11 +76,28 @@
       <a-box id="replayCube" position="0 1 -5" color="red" visible="false" scale="2 2 2"></a-box>
 
       <a-plane rotation="-90 0 0" width="5000" height="5000" color="#7BC8A4"></a-plane>
-            <a-plane rotation="-90 0 0" width="5" height="75" color="#6e6e6e" position="0 0.1 0"></a-plane>
+      <a-plane rotation="-90 0 0" width="5" height="75" color="#6e6e6e" position="0 0.1 0"></a-plane>
 
+      <a-entity id="environment-objects">
+        <a-cylinder position="-5 1.5 -10" radius="1" height="3" color="#FF6F61"></a-cylinder>
+        <a-cylinder position="8 2 -15" radius="1.5" height="4" color="#6B5B95"></a-cylinder>
+        <a-cone position="-12 2 -5" radius-bottom="2" radius-top="0" height="4" color="#88B04B"></a-cone>
+        <a-cone position="10 2.5 -8" radius-bottom="1.8" radius-top="0.5" height="5" color="#F7CAC9"></a-cone>
+        <a-dodecahedron position="-7 1 -20" radius="1.2" color="#FFD700"></a-dodecahedron>
+        <a-pyramid position="15 2 -12" height="4" width="3" depth="3" color="#45B8AC"></a-pyramid>
+        <a-pyramid position="-3 1.5 -25" height="3" width="2.5" depth="2.5" color="#EFC050"></a-pyramid>
 
-      <a-entity id="environment-objects"></a-entity>
-
+        <a-cylinder position="200 5 -300" radius="10" height="50" color="#ADD8E6"></a-cylinder>
+        <a-cone position="-250 8 150" radius-bottom="15" height="60" color="#FFB6C1"></a-cone>
+        <a-pyramid position="350 10 400" height="70" width="60" depth="60" color="#90EE90"></a-pyramid>
+        <a-box position="-400 7 -200" width="40" height="40" depth="40" color="#FFDAB9"></a-box>
+        <a-sphere position="180 12 -450" radius="25" color="#DDA0DD"></a-sphere>
+        <a-cylinder position="-300 6 380" radius="12" height="45" color="#87CEFA"></a-cylinder>
+        <a-cone position="450 9 -100" radius-bottom="18" height="55" color="#F08080"></a-cone>
+        <a-pyramid position="-150 11 480" height="65" width="50" depth="50" color="#DA70D6"></a-pyramid>
+        <a-dodecahedron position="280 4 220" radius="20" color="#C0C0C0"></a-dodecahedron>
+        <a-box position="500 8 0" width="35" height="35" depth="35" color="#AFEEEE"></a-box>
+      </a-entity>
     </a-scene>
 
     <script>
@@ -124,7 +143,7 @@
       function startReplay() {
         const data = document.querySelector('#cameraRig').components.recorder.dataLog;
         if (data.length === 0) {
-          alert("No hay datos para reproducir.");
+          alert('No hay datos para reproducir.');
           return;
         }
 
@@ -182,8 +201,8 @@
           this.altitudeDisplay.textContent = `Altitud: ${pos.y.toFixed(2)}m`;
 
           if (this.flyControls && this.flyControls.velocity) {
-              const speed = this.flyControls.velocity.length();
-              this.speedDisplay.textContent = `Velocidad: ${speed.toFixed(2)}m/s`;
+            const speed = this.flyControls.velocity.length();
+            this.speedDisplay.textContent = `Velocidad: ${speed.toFixed(2)}m/s`;
           }
 
           if (!isRecording) return;
@@ -201,19 +220,19 @@
             },
           };
           this.dataLog.push(snapshot);
-        }
+        },
       });
 
       AFRAME.registerComponent('fly-controls', {
         schema: {
-          speed: { type: 'number', default: 0.1 },
+          speed: { type: 'number', default: 0.05 },
           groundLevel: { type: 'number', default: 1.6 },
           inertiaDamping: { type: 'number', default: 0.93 },
           groundDamping: { type: 'number', default: 0.75 },
           yawSpeed: { type: 'number', default: 1 },
           rollSpeed: { type: 'number', default: 0.1 },
           rollDamping: { type: 'number', default: 0.9 },
-          maxRoll: { type: 'number', default: 30 }
+          maxRoll: { type: 'number', default: 30 },
         },
         init: function () {
           this.direction = new AFRAME.THREE.Vector3();
@@ -223,8 +242,8 @@
 
           this.keys = {};
 
-          window.addEventListener('keydown', e => this.keys[e.code] = true);
-          window.addEventListener('keyup', e => this.keys[e.code] = false);
+          window.addEventListener('keydown', (e) => (this.keys[e.code] = true));
+          window.addEventListener('keyup', (e) => (this.keys[e.code] = false));
 
           this.lookControls = this.el.components['look-controls'];
           if (this.lookControls) {
@@ -236,32 +255,34 @@
           this.previousYaw = 0;
 
           if (this.lookControls && this.lookControls.onMouseMove) {
-              const originalOnMouseMove = this.lookControls.onMouseMove.bind(this.lookControls);
-              this.lookControls.onMouseMove = (event) => {
-                  const pitchObject = this.lookControls.pitchObject;
-                  const yawObject = this.lookControls.yawObject;
+            const originalOnMouseMove = this.lookControls.onMouseMove.bind(this.lookControls);
+            this.lookControls.onMouseMove = (event) => {
+              const pitchObject = this.lookControls.pitchObject;
+              const yawObject = this.lookControls.yawObject;
 
-                  if (!this.lookControls.pointerLocked && !this.lookControls.isDragging) { return; }
+              if (!this.lookControls.pointerLocked && !this.lookControls.isDragging) {
+                return;
+              }
 
-                  let movementX = 0;
-                  let movementY = 0;
+              let movementX = 0;
+              let movementY = 0;
 
-                  if (this.lookControls.pointerLocked) {
-                      movementX = event.movementX || event.mozMovementX || 0;
-                      movementY = event.movementY || event.mozMovementY || 0;
-                  } else {
-                      movementX = event.screenX - this.lookControls.previousMouseEvent.screenX;
-                      movementY = event.screenY - this.lookControls.previousMouseEvent.screenY;
-                      this.lookControls.previousMouseEvent = event;
-                  }
+              if (this.lookControls.pointerLocked) {
+                movementX = event.movementX || event.mozMovementX || 0;
+                movementY = event.movementY || event.mozMovementY || 0;
+              } else {
+                movementX = event.screenX - this.lookControls.previousMouseEvent.screenX;
+                movementY = event.screenY - this.lookControls.previousMouseEvent.screenY;
+                this.lookControls.previousMouseEvent = event;
+              }
 
-                  yawObject.rotation.y -= movementX * 0.002;
+              yawObject.rotation.y -= movementX * 0.002;
 
-                  pitchObject.rotation.x -= movementY * 0.002;
+              pitchObject.rotation.x -= movementY * 0.002;
 
-                  const PI_2 = Math.PI / 2;
-                  pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x));
-              };
+              const PI_2 = Math.PI / 2;
+              pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x));
+            };
           }
         },
 
@@ -273,7 +294,7 @@
 
           let currentLinearDamping = data.inertiaDamping;
           if (position.y <= data.groundLevel + 0.1) {
-              currentLinearDamping = data.groundDamping;
+            currentLinearDamping = data.groundDamping;
           }
           this.velocity.multiplyScalar(currentLinearDamping);
 
@@ -307,8 +328,63 @@
           this.roll *= data.rollDamping;
 
           this.lookControls.pitchObject.rotation.z = THREE.MathUtils.degToRad(this.roll);
+        },
+      });
+
+      AFRAME.scenes[0].addEventListener('loaded', function () {
+        const environmentObjects = document.getElementById('environment-objects');
+        const planeSize = 5000;
+        const numberOfObjects = 200;
+        const objectTypes = ['a-box', 'a-sphere', 'a-cylinder', 'a-cone', 'a-dodecahedron'];
+        const colors = ['#EF2D5E', '#4CC3D9', '#FFC65D', '#92A619', '#F2714D', '#A55EEA', '#EAA7E2'];
+
+        for (let i = 0; i < numberOfObjects; i++) {
+          const objectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+
+          const x = (Math.random() - 0.5) * planeSize;
+          const z = (Math.random() - 0.5) * planeSize;
+
+          let entity = document.createElement(objectType);
+          let height = Math.random() * 3 + 0.5;
+          let radius = Math.random() * 1 + 0.2;
+
+          let yPosition;
+          if (objectType === 'a-box' || objectType === 'a-dodecahedron') {
+            yPosition = height / 2;
+            entity.setAttribute('depth', height);
+            entity.setAttribute('height', height);
+            entity.setAttribute('width', height);
+          } else if (objectType === 'a-sphere') {
+            yPosition = radius;
+            entity.setAttribute('radius', radius);
+          } else if (objectType === 'a-cylinder' || objectType === 'a-cone') {
+            yPosition = height / 2;
+            entity.setAttribute('radius', radius);
+            entity.setAttribute('height', height);
+          }
+
+          entity.setAttribute('position', `${x} ${yPosition} ${z}`);
+          entity.setAttribute('color', color);
+          environmentObjects.appendChild(entity);
         }
       });
+      function downloadDataLog() {
+        const data = document.querySelector('#cameraRig').components.recorder.dataLog;
+        if (data.length === 0) {
+          alert('No hay datos grabados para descargar.');
+          return;
+        }
+
+        const jsonData = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'recorrido.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     </script>
   </body>
 </html>
