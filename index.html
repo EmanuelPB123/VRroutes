@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Grabador con Vuelo y Reproducción - Avión</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 8px;
+        z-index: 999;
+        font-family: sans-serif;
+      }
+
+      #mobile-controls {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 999;
+      }
+
+      #mobile-controls button {
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 10px;
+        background: #333;
+        color: white;
+        border: none;
+      }
+
+      #log {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-top: 10px;
+        font-size: 12px;
+        white-space: pre-wrap;
+        display: none; /* Oculto por defecto */
+      }
+
+      #altitude-display, #speed-display {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <button onclick="startRecording()">Iniciar Grabación</button>
+      <button onclick="stopRecording()">Detener Grabación</button>
+      <button onclick="toggleData()">Mostrar Datos</button>
+      <button onclick="startReplay()">Reproducir Recorrido</button>
+      <button onclick="stopReplay()">Detener Reproducción</button>
+      <button onclick="downloadDataLog()">Descargar Recorrido</button>
+      <div id="altitude-display">Altitud: 0.00m</div>
+      <div id="speed-display">Velocidad: 0.00m/s</div> <div id="log"></div>
+    </div>
+
+    <div id="mobile-controls">
+      <button id="btnForward" ontouchstart="press('KeyW')" ontouchend="release('KeyW')">↑ Avanzar</button>
+      <button id="btnBackward" ontouchstart="press('KeyS')" ontouchend="release('KeyS')">↓ Retroceder</button>
+    </div>
+
+    <a-scene>
+      <a-entity id="cameraRig" camera look-controls fly-controls recorder></a-entity>
+
+      <a-box id="replayCube" position="0 1 -5" color="red" visible="false" scale="2 2 2"></a-box>
+
+      <a-plane rotation="-90 0 0" width="5000" height="5000" color="#7BC8A4"></a-plane>
+            <a-plane rotation="-90 0 0" width="5" height="75" color="#6e6e6e" position="0 0.1 0"></a-plane>
+
+
+      <a-entity id="environment-objects"></a-entity>
+
+    </a-scene>
+
+    <script>
+      let isRecording = false;
+      let isReplaying = false;
+      let replayIndex = 0;
+      let replayInterval;
+      let logVisible = false;
+
+      function startRecording() {
+        isRecording = true;
+        replayIndex = 0;
+        stopReplay();
+        const recorder = document.querySelector('#cameraRig').components.recorder;
+        recorder.dataLog = [];
+        document.getElementById('log').style.display = 'none';
+        document.getElementById('log').textContent = '⏺ Grabando...';
+        // Hide replay cube when starting a new recording
+        document.querySelector('#replayCube').setAttribute('visible', false);
+      }
+
+      function stopRecording() {
+        isRecording = false;
+        document.getElementById('log').textContent = '⏹ Grabación detenida.';
+      }
+
+      function toggleData() {
+        const log = document.getElementById('log');
+        logVisible = !logVisible;
+        log.style.display = logVisible ? 'block' : 'none';
+        if (logVisible) showData();
+      }
+
+      function showData() {
+        const data = document.querySelector('#cameraRig').components.recorder.dataLog;
+        let output = '';
+        data.forEach((entry, i) => {
+          output += `${i + 1}. Pos: (${entry.position.x}, ${entry.position.y}, ${entry.position.z}) - Rot: (${entry.rotation.x}°, ${entry.rotation.y}°, ${entry.rotation.z}°)\n`;
+        });
+        document.getElementById('log').textContent = output || 'No hay datos grabados.';
+      }
+
+      function startReplay() {
+        const data = document.querySelector('#cameraRig').components.recorder.dataLog;
+        if (data.length === 0) {
+          alert("No hay datos para reproducir.");
+          return;
+        }
+
+        isReplaying = true;
+        const cube = document.querySelector('#replayCube');
+        replayIndex = 0;
+        cube.setAttribute('visible', true); // Make the cube visible
+
+        replayInterval = setInterval(() => {
+          if (!isReplaying || replayIndex >= data.length) {
+            stopReplay();
+            return;
+          }
+
+          const entry = data[replayIndex];
+          cube.setAttribute('position', `${entry.position.x} ${entry.position.y} ${entry.position.z}`);
+          cube.setAttribute('rotation', `${entry.rotation.x} ${entry.rotation.y} ${entry.rotation.z}`);
+          replayIndex++;
+        }, 30);
+      }
+
+      function stopReplay() {
+        isReplaying = false;
+        clearInterval(replayInterval);
+        const cube = document.querySelector('#replayCube');
+        if (cube) {
+          cube.setAttribute('visible', false); // Hide the cube when replay stops
+        }
+      }
+
+      function press(code) {
+        const flyControls = document.querySelector('#cameraRig').components['fly-controls'];
+        if (flyControls) {
+          flyControls.keys[code] = true;
+        }
+      }
+
+      function release(code) {
+        const flyControls = document.querySelector('#cameraRig').components['fly-controls'];
+        if (flyControls) {
+          flyControls.keys[code] = false;
+        }
+      }
+
+      AFRAME.registerComponent('recorder', {
+        init: function () {
+          this.dataLog = [];
+          this.altitudeDisplay = document.getElementById('altitude-display');
+          this.speedDisplay = document.getElementById('speed-display');
+          this.flyControls = document.querySelector('#cameraRig').components['fly-controls'];
+        },
+        tick: function () {
+          const pos = this.el.object3D.position;
+
+          this.altitudeDisplay.textContent = `Altitud: ${pos.y.toFixed(2)}m`;
+
+          if (this.flyControls && this.flyControls.velocity) {
+              const speed = this.flyControls.velocity.length();
+              this.speedDisplay.textContent = `Velocidad: ${speed.toFixed(2)}m/s`;
+          }
+
+          if (!isRecording) return;
+          const snapshot = {
+            time: performance.now(),
+            position: {
+              x: pos.x.toFixed(2),
+              y: pos.y.toFixed(2),
+              z: pos.z.toFixed(2),
+            },
+            rotation: {
+              x: AFRAME.THREE.MathUtils.radToDeg(this.el.object3D.rotation.x).toFixed(2),
+              y: AFRAME.THREE.MathUtils.radToDeg(this.el.object3D.rotation.y).toFixed(2),
+              z: AFRAME.THREE.MathUtils.radToDeg(this.el.object3D.rotation.z).toFixed(2),
+            },
+          };
+          this.dataLog.push(snapshot);
+        }
+      });
+
+      AFRAME.registerComponent('fly-controls', {
+        schema: {
+          speed: { type: 'number', default: 0.05 },
+          groundLevel: { type: 'number', default: 1.6 },
+          inertiaDamping: { type: 'number', default: 0.93 },
+          groundDamping: { type: 'number', default: 0.75 },
+          yawSpeed: { type: 'number', default: 1 },
+          rollSpeed: { type: 'number', default: 0.1 },
+          rollDamping: { type: 'number', default: 0.9 },
+          maxRoll: { type: 'number', default: 30 }
+        },
+        init: function () {
+          this.direction = new AFRAME.THREE.Vector3();
+          this.velocity = new AFRAME.THREE.Vector3();
+
+          this.roll = 0;
+
+          this.keys = {};
+
+          window.addEventListener('keydown', e => this.keys[e.code] = true);
+          window.addEventListener('keyup', e => this.keys[e.code] = false);
+
+          this.lookControls = this.el.components['look-controls'];
+          if (this.lookControls) {
+            this.lookControls.data.pointerLockEnabled = true;
+            this.lookControls.yawObject.rotation.set(0, 0, 0);
+            this.lookControls.pitchObject.rotation.set(0, 0, 0);
+          }
+
+          this.previousYaw = 0;
+
+          if (this.lookControls && this.lookControls.onMouseMove) {
+              const originalOnMouseMove = this.lookControls.onMouseMove.bind(this.lookControls);
+              this.lookControls.onMouseMove = (event) => {
+                  const pitchObject = this.lookControls.pitchObject;
+                  const yawObject = this.lookControls.yawObject;
+
+                  if (!this.lookControls.pointerLocked && !this.lookControls.isDragging) { return; }
+
+                  let movementX = 0;
+                  let movementY = 0;
+
+                  if (this.lookControls.pointerLocked) {
+                      movementX = event.movementX || event.mozMovementX || 0;
+                      movementY = event.movementY || event.mozMovementY || 0;
+                  } else {
+                      movementX = event.screenX - this.lookControls.previousMouseEvent.screenX;
+                      movementY = event.screenY - this.lookControls.previousMouseEvent.screenY;
+                      this.lookControls.previousMouseEvent = event;
+                  }
+
+                  yawObject.rotation.y -= movementX * 0.002;
+
+                  pitchObject.rotation.x -= movementY * 0.002;
+
+                  const PI_2 = Math.PI / 2;
+                  pitchObject.rotation.x = Math.max(-PI_2, Math.min(PI_2, pitchObject.rotation.x));
+              };
+          }
+        },
+
+        tick: function (time, deltaTime) {
+          const el = this.el;
+          const position = el.object3D.position;
+          const rotation = el.object3D.rotation;
+          const data = this.data;
+
+          let currentLinearDamping = data.inertiaDamping;
+          if (position.y <= data.groundLevel + 0.1) {
+              currentLinearDamping = data.groundDamping;
+          }
+          this.velocity.multiplyScalar(currentLinearDamping);
+
+          const moveDirection = new AFRAME.THREE.Vector3();
+          el.object3D.getWorldDirection(moveDirection);
+
+          if (this.keys['KeyW']) {
+            this.velocity.add(moveDirection.clone().multiplyScalar(-data.speed));
+          }
+          if (this.keys['KeyS']) {
+            this.velocity.add(moveDirection.clone().multiplyScalar(data.speed));
+          }
+
+          position.add(this.velocity);
+
+          if (position.y < data.groundLevel) {
+            position.y = data.groundLevel;
+            if (this.velocity.y < 0) {
+              this.velocity.y = 0;
+            }
+          }
+
+          const currentYaw = this.lookControls.yawObject.rotation.y;
+          const yawDelta = currentYaw - this.previousYaw;
+          this.previousYaw = currentYaw;
+
+          let targetRoll = -yawDelta * 500;
+          targetRoll = THREE.MathUtils.clamp(targetRoll, -data.maxRoll, data.maxRoll);
+
+          this.roll += (targetRoll - this.roll) * data.rollSpeed;
+          this.roll *= data.rollDamping;
+
+          this.lookControls.pitchObject.rotation.z = THREE.MathUtils.degToRad(this.roll);
+        }
+      });
+
+      AFRAME.scenes[0].addEventListener('loaded', function () {
+        const environmentObjects = document.getElementById('environment-objects');
+        const planeSize = 5000;
+        const numberOfObjects = 200;
+        const objectTypes = ['a-box', 'a-sphere', 'a-cylinder', 'a-cone', 'a-dodecahedron'];
+        const colors = ['#EF2D5E', '#4CC3D9', '#FFC65D', '#92A619', '#F2714D', '#A55EEA', '#EAA7E2'];
+
+        for (let i = 0; i < numberOfObjects; i++) {
+          const objectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+
+          const x = (Math.random() - 0.5) * planeSize;
+          const z = (Math.random() - 0.5) * planeSize;
+
+          let entity = document.createElement(objectType);
+          let height = Math.random() * 3 + 0.5;
+          let radius = Math.random() * 1 + 0.2;
+
+          let yPosition;
+          if (objectType === 'a-box' || objectType === 'a-dodecahedron') {
+            yPosition = height / 2;
+            entity.setAttribute('depth', height);
+            entity.setAttribute('height', height);
+            entity.setAttribute('width', height);
+          } else if (objectType === 'a-sphere') {
+            yPosition = radius;
+            entity.setAttribute('radius', radius);
+          } else if (objectType === 'a-cylinder' || objectType === 'a-cone') {
+            yPosition = height / 2;
+            entity.setAttribute('radius', radius);
+            entity.setAttribute('height', height);
+          }
+
+          entity.setAttribute('position', `${x} ${yPosition} ${z}`);
+          entity.setAttribute('color', color);
+          environmentObjects.appendChild(entity);
+        }
+      });
+      function downloadDataLog() {
+  const data = document.querySelector('#cameraRig').components.recorder.dataLog;
+  if (data.length === 0) {
+    alert("No hay datos grabados para descargar.");
+    return;
+  }
+
+  const jsonData = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonData], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'recorrido.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+    </script>
+  </body>
+</html>
