@@ -225,14 +225,14 @@
 
       AFRAME.registerComponent('fly-controls', {
         schema: {
-          speed: { type: 'number', default: 0.05 },
+          speed: { type: 'number', default: 0.1 },
           groundLevel: { type: 'number', default: 1.6 },
           inertiaDamping: { type: 'number', default: 0.93 },
           groundDamping: { type: 'number', default: 0.75 },
           yawSpeed: { type: 'number', default: 1 },
           rollSpeed: { type: 'number', default: 0.1 },
           rollDamping: { type: 'number', default: 0.9 },
-          maxRoll: { type: 'number', default: 30 },
+          maxRoll: { type: 'number', default: 40 },
         },
         init: function () {
           this.direction = new AFRAME.THREE.Vector3();
