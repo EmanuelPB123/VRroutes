@@ -206,7 +206,7 @@
 
       AFRAME.registerComponent('fly-controls', {
         schema: {
-          speed: { type: 'number', default: 0.05 },
+          speed: { type: 'number', default: 0.1 },
           groundLevel: { type: 'number', default: 1.6 },
           inertiaDamping: { type: 'number', default: 0.93 },
           groundDamping: { type: 'number', default: 0.75 },
@@ -309,61 +309,6 @@
           this.lookControls.pitchObject.rotation.z = THREE.MathUtils.degToRad(this.roll);
         }
       });
-
-      AFRAME.scenes[0].addEventListener('loaded', function () {
-        const environmentObjects = document.getElementById('environment-objects');
-        const planeSize = 5000;
-        const numberOfObjects = 200;
-        const objectTypes = ['a-box', 'a-sphere', 'a-cylinder', 'a-cone', 'a-dodecahedron'];
-        const colors = ['#EF2D5E', '#4CC3D9', '#FFC65D', '#92A619', '#F2714D', '#A55EEA', '#EAA7E2'];
-
-        for (let i = 0; i < numberOfObjects; i++) {
-          const objectType = objectTypes[Math.floor(Math.random() * objectTypes.length)];
-          const color = colors[Math.floor(Math.random() * colors.length)];
-
-          const x = (Math.random() - 0.5) * planeSize;
-          const z = (Math.random() - 0.5) * planeSize;
-
-          let entity = document.createElement(objectType);
-          let height = Math.random() * 3 + 0.5;
-          let radius = Math.random() * 1 + 0.2;
-
-          let yPosition;
-          if (objectType === 'a-box' || objectType === 'a-dodecahedron') {
-            yPosition = height / 2;
-            entity.setAttribute('depth', height);
-            entity.setAttribute('height', height);
-            entity.setAttribute('width', height);
-          } else if (objectType === 'a-sphere') {
-            yPosition = radius;
-            entity.setAttribute('radius', radius);
-          } else if (objectType === 'a-cylinder' || objectType === 'a-cone') {
-            yPosition = height / 2;
-            entity.setAttribute('radius', radius);
-            entity.setAttribute('height', height);
-          }
-
-          entity.setAttribute('position', `${x} ${yPosition} ${z}`);
-          entity.setAttribute('color', color);
-          environmentObjects.appendChild(entity);
-        }
-      });
-      function downloadDataLog() {
-  const data = document.querySelector('#cameraRig').components.recorder.dataLog;
-  if (data.length === 0) {
-    alert("No hay datos grabados para descargar.");
-    return;
-  }
-
-  const jsonData = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonData], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'recorrido.json';
-  a.click();
-  URL.revokeObjectURL(url);
-}
     </script>
   </body>
 </html>
